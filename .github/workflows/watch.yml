@@ -2,6 +2,12 @@ name: Madame Toki Watch
 
 on:
   workflow_dispatch:
+    inputs:
+      send_test_email:
+        description: 'Send a test email without waiting for availability'
+        required: false
+        default: false
+        type: boolean
   schedule:
     # GitHub cron uses UTC. 00:00-06:55 UTC = 09:00-15:55 JST.
     - cron: '*/5 0-6 1 11 *'
@@ -17,6 +23,9 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Check Madame Toki
         run: python watcher.py
+      - name: Prepare manual email test
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.send_test_email }}
+        run: echo 'manual email test' > availability.txt
       - name: Send email when availability is detected
         if: ${{ hashFiles('availability.txt') != '' }}
         uses: dawidd6/action-send-mail@v3
@@ -30,8 +39,10 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL }}
           from: ${{ secrets.GMAIL_USER }}
           body: |
-            マダム・トキで対象日の予約枠らしき表示を検知しました。
+            マダム・トキ監視からの通知です。
             条件：4名 / 2027年1月9日または1月16日 / ランチ
 
-            すぐに一休を確認してください：
+            一休予約ページ：
             https://restaurant.ikyu.com/106791
+
+            ※手動テストの場合は実際の空席を意味しません。
