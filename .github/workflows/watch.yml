@@ -1,0 +1,37 @@
+name: Madame Toki Watch
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GitHub cron uses UTC. 00:00-06:55 UTC = 09:00-15:55 JST.
+    - cron: '*/5 0-6 1 11 *'
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Check Madame Toki
+        run: python watcher.py
+      - name: Send email when availability is detected
+        if: ${{ hashFiles('availability.txt') != '' }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: '【空席検知】マダム・トキ 2027年1月ランチ'
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ${{ secrets.GMAIL_USER }}
+          body: |
+            マダム・トキで対象日の予約枠らしき表示を検知しました。
+            条件：4名 / 2027年1月9日または1月16日 / ランチ
+
+            すぐに一休を確認してください：
+            https://restaurant.ikyu.com/106791
